@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+    <style>
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            flex-wrap: nowrap;
+        }
+
+        .block {
+            flex: 1;
+            padding: 20px;
+            border: 1px solid black
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        h3 {
+            text-align: center;
+        }
+
+        .line1b {
+            position: absolute;
+            background-color: black;
+            transform-origin: top left;     
+            height: 1px;
+            top: 0px;
+            left: 0px;
+            width: 141.4px;
+            transform: rotate(32.05deg);
+            display: none;
+        }
+
+
+        .line1c {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            padding: 5px;
+            border: 1px solid black;
+            display: none;
+        }
+
+        .line1a:hover .line1c {
+            display: block;
+        }
+
+        .parentPoseContainter {
+            position: relative;
+        }
+        
+    </style>
+
+
+
+    <body>
+        <div class="container">
+            <div class="block">
+                <h3>Live Streaming</h3>
+                <img id="videoStream" src="{{ url_for('video_feed') }}" width="100%">
+                <br>
+                <button type="button" onclick="processScan()">Scan3D</button>
+                <button type="button" onclick="processPose()">Pose</button>
+                <button type="button" onclick="processSeg()">Seg</button><br>
+                <button type="button" onclick="processScan90()">Scan3D90</button>
+                <button type="button" onclick="processPose90()">Pose90</button>
+                <button type="button" onclick="processSeg90()">Seg90</button>
+                <button type="button" onclick="sendData()" id="sendButton">Send Data</button><br>
+                <label for="d_param">Enter d_param:</label>
+                <input type="text" id="d_param" name="d_param"><br>                             
+                <label for="f_param">Enter f_param:</label>
+                <input type="text" id="f_param" name="f_param">
+                <button onclick="sendData2InitMeasure()">Init Measure</button><br>
+            </div>
+            <div class="block">
+                <h3>Scan 3D</h3>
+                <div id="processedScanContainer"></div>
+            </div>
+            <div class="block">
+                <h3>Pose</h3>
+                <div class="parentPoseContainter">
+                    <div id="processedPoseContainer"></div>
+                    <div class="line1a"><div class="line1b"><div class="line1c">132</div></div></div>
+                </div>
+            </div>
+            <div class="block">
+                <h3>Segmentation</h3>
+                <div id="processedSegContainer"></div>
+            </div>
+            <div class="block">
+                <h3>Bảng thống kê</h3>
+                <table>
+                    <tr>
+                        <th>Thông tin</th>
+                        <th>Kết quả</th>
+                        <th>Đánh giá</th>
+                    </tr>
+                    <tr>
+                        <td>Chiều cao</td>
+                        <td id="height">x</td>
+                        <td>x</td>
+                    </tr>
+                    <tr>
+                        <td>Độ dài ống xương chân</td>
+                        <td id="ongchan">x</td>
+                        <td>x</td>
+                    </tr>
+                    <tr>
+                        <td>Khoảng cách giữa 2 đầu gối</td>
+                        <td id="haidaugoi">x</td>
+                        <td>x</td>
+                    </tr>
+                    <tr>
+                        <td>Chiều dài thân</td>
+                        <td id="chieudaithan">x</td>
+                        <td>x</td>
+                    </tr>
+                    <tr>
+                        <td>Độ lệch giữa 2 vai</td>
+                        <td id="dolechvai">x</td>
+                        <td id="dosau">x</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="block">
+                <h3>Scan 3D 90</h3>
+                <div id="processedScanContainer90"></div>
+            </div>
+            <div class="block">
+                <h3>Pose 90</h3>
+                <div id="processedPoseContainer90"></div>
+            </div>
+            <div class="block">
+                <h3>Segmentation 90</h3>
+                <div id="processedSegContainer90"></div>
+            </div>
+        </div>
+
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <script>
+            async function processScan() {
+                const response = await axios.post('/process_scan3d', {
+                }, {
+                    responseType: 'blob'
+                });
+            
+                if (response.status === 200) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.data);
+                
+                    const processedImageContainer = document.getElementById('processedScanContainer');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
+        </script>
+        <script>
+            async function processSeg() {
+                const response = await axios.post('/process_seg', {
+                }, {
+                    responseType: 'blob'
+                });
+            
+                if (response.status === 200) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.data);
+                
+                    const processedImageContainer = document.getElementById('processedSegContainer');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
+        </script>
+        <script>
+            async function processPose() {
+                const response = await axios.post('/process_pose', {
+
+                }, {
+                    responseType: 'blob'
+                });
+            
+                if (response.status === 200) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.data);
+                
+                    const processedImageContainer = document.getElementById('processedPoseContainer');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
+        </script>
+        <script>
+            async function processScan90() {
+                const response = await axios.post('/process_scan3d', {
+                }, {
+                    responseType: 'blob'
+                });
+            
+                if (response.status === 200) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.data);
+                
+                    const processedImageContainer = document.getElementById('processedScanContainer90');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
+        </script>
+        <script>
+            async function processSeg90() {
+                const response = await axios.post('/process_seg', {
+                }, {
+                    responseType: 'blob'
+                });
+            
+                if (response.status === 200) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.data);
+                
+                    const processedImageContainer = document.getElementById('processedSegContainer90');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
+        </script>
+        <script>
+            async function processPose90() {
+                const response = await axios.post('/process_pose', {
+
+                }, {
+                    responseType: 'blob'
+                });
+            
+                if (response.status === 200) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.data);
+                
+                    const processedImageContainer = document.getElementById('processedPoseContainer90');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
+        </script>
+        <script>
+            function sendData() {            
+                fetch('/process_data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify()
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const height = document.getElementById('height');
+                    height.textContent = data.height;
+                    const ongchan = document.getElementById('ongchan');
+                    ongchan.textContent = data.ongchan;
+                    const haidaugoi = document.getElementById('haidaugoi');
+                    haidaugoi.textContent = data.haidaugoi;
+                    const chieudaithan = document.getElementById('chieudaithan');
+                    chieudaithan.textContent = data.chieudaithan;
+                    const dolechvai = document.getElementById('dolechvai');
+                    dolechvai.textContent = data.dolechvai;
+                    const dosau = document.getElementById('dosau');
+                    dosau.textContent = data.dosau;
+                });
+            }
+        </script>
+        <script>
+            function sendData2InitMeasure() {
+                var d_param = document.getElementById('d_param').value;
+                var f_param = document.getElementById('f_param').value;
+                 
+                fetch('/initMeasure', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ d_param: d_param, f_param: f_param })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Handle the response from the backend
+                });
+            }
+        </script>
+        <script>
+            const lineAfter2 = document.querySelector('.line1c');
+            lineAfter2.innerHTML="ok"
+            const lineAfter = document.querySelector('.line1b');
+            lineAfter.style.width = "100px"
+        </script>
+
+        <script>
+            var line1b = document.querySelector('.line1b');
+            var toggleButton = document.getElementById('sendButton');
+            var isLineVisible = false;
+    
+            toggleButton.addEventListener('click', function() {
+                if (!isLineVisible) {
+                    line1b.style.display = 'block';
+                    isLineVisible = true;
+                }
+            });
+        </script>
+    </body>
+</html>

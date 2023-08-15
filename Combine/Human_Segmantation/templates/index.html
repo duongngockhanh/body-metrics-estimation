@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <div class="container">
+            <h3>Live Streaming</h3>
+            <img id="videoStream" src="{{ url_for('video_feed') }}" width="50%">
+            </br>
+            <button type="button" onclick="processImage()">Click Me!</button>
+            <div id="processedImageContainer"></div>
+            <button type="button">Click Me 2</button>
+        </div>
+
+        <!-- <script>
+            async function processImage() {
+                const response = await fetch('/process_image', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.blob());
+
+                    const processedImageContainer = document.getElementById('processedImageContainer');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
+        </script> -->
+        <script>
+            function processTask(task) {
+                $.ajax({
+                    url: "{{ url_for('process_image') }}",  // URL with task parameter
+                    type: 'POST',
+                    data: {"task": task},
+                    error: function(error) {
+                        console.log(error);
+                    }
+                });
+            }
+        </script>
+    </body>
+</html>
