@@ -1,5 +1,4 @@
-# Height Measurement in Company
-*Note: This project belongs to my company, not me.*
+# Height Measurement
 
 ```commandline
 cd Combine
