@@ -13,7 +13,10 @@ from detectron2.structures.instances import Instances
 from detectron2.utils.logger import setup_logger
 
 from densepose import add_densepose_config
-from densepose.structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
+from densepose.structures import (
+    DensePoseChartPredictorOutput,
+    DensePoseEmbeddingPredictorOutput,
+)
 from densepose.utils.logger import verbosity_to_level
 from densepose.vis.base import CompoundVisualizer
 from densepose.vis.bounding_box import ScoredBoundingBoxVisualizer
@@ -101,12 +104,18 @@ class InferenceAction(Action):
             img = read_image(file_name, format="BGR")  # predictor expects BGR image.
             with torch.no_grad():
                 outputs = predictor(img)["instances"]
-                cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs)
+                cls.execute_on_outputs(
+                    context, {"file_name": file_name, "image": img}, outputs
+                )
         cls.postexecute(context)
 
     @classmethod
     def setup_config(
-        cls: type, config_fpath: str, model_fpath: str, args: argparse.Namespace, opts: List[str]
+        cls: type,
+        config_fpath: str,
+        model_fpath: str,
+        args: argparse.Namespace,
+        opts: List[str],
     ):
         cfg = get_cfg()
         add_densepose_config(cfg)
@@ -143,7 +152,9 @@ class DumpAction(InferenceAction):
 
     @classmethod
     def add_parser(cls: type, subparsers: argparse._SubParsersAction):
-        parser = subparsers.add_parser(cls.COMMAND, help="Dump model outputs to a file.")
+        parser = subparsers.add_parser(
+            cls.COMMAND, help="Dump model outputs to a file."
+        )
         cls.add_arguments(parser)
         parser.set_defaults(func=cls.execute)
 
@@ -229,7 +240,11 @@ class ShowAction(InferenceAction):
             help="Minimum detection score to visualize",
         )
         parser.add_argument(
-            "--nms_thresh", metavar="<threshold>", default=None, type=float, help="NMS threshold"
+            "--nms_thresh",
+            metavar="<threshold>",
+            default=None,
+            type=float,
+            help="NMS threshold",
         )
         parser.add_argument(
             "--texture_atlas",
@@ -252,7 +267,11 @@ class ShowAction(InferenceAction):
 
     @classmethod
     def setup_config(
-        cls: type, config_fpath: str, model_fpath: str, args: argparse.Namespace, opts: List[str]
+        cls: type,
+        config_fpath: str,
+        model_fpath: str,
+        args: argparse.Namespace,
+        opts: List[str],
     ):
         opts.append("MODEL.ROI_HEADS.SCORE_THRESH_TEST")
         opts.append(str(args.min_score))
@@ -296,7 +315,9 @@ class ShowAction(InferenceAction):
         return base + ".{0:04d}".format(entry_idx) + ext
 
     @classmethod
-    def create_context(cls: type, args: argparse.Namespace, cfg: CfgNode) -> Dict[str, Any]:
+    def create_context(
+        cls: type, args: argparse.Namespace, cfg: CfgNode
+    ) -> Dict[str, Any]:
         vis_specs = args.visualizations.split(",")
         visualizers = []
         extractors = []
@@ -321,64 +342,72 @@ class ShowAction(InferenceAction):
             "entry_idx": 0,
         }
         return context
-class DensePose():
-    def __init__(self,model_path,model_config_path) :
-        opts=['MODEL.ROI_HEADS.SCORE_THRESH_TEST', '0.8']
-        # Khởi tạo file config đọc mô hình 
-        self.cfg=get_cfg()
+
+
+class DensePose:
+    def __init__(self, model_path, model_config_path):
+        opts = ["MODEL.ROI_HEADS.SCORE_THRESH_TEST", "0.8"]
+        # Khởi tạo file config đọc mô hình
+        self.cfg = get_cfg()
         add_densepose_config(self.cfg)
         self.cfg.merge_from_file((model_config_path))
         # print(cfg.dump())
-        self.cfg.MODEL.WEIGHTS=model_path
-        self.cfg.MODEL.DEVICE="cpu"
+        self.cfg.MODEL.WEIGHTS = model_path
+        self.cfg.MODEL.DEVICE = "cpu"
         self.cfg.merge_from_list(opts)
         self.cfg.freeze()
-        #Load model 
+        # Load model
         self.predictor = DefaultPredictor(self.cfg)
-        self.visualizations=["bbox","dp_contour"]
-        self.cls=ShowAction()
-    def inference(self,img):
-        output=self.predictor(img)["instances"]
-        bbox=output.get("pred_boxes").tensor.cpu()
-        bbox=bbox.detach().numpy()
-        bbox=bbox.astype(np.int64)
+        self.visualizations = ["bbox", "dp_contour"]
+        self.cls = ShowAction()
+
+    def inference(self, img):
+        output = self.predictor(img)["instances"]
+        bbox = output.get("pred_boxes").tensor.cpu()
+        bbox = bbox.detach().numpy()
+        bbox = bbox.astype(np.int64)
         print(bbox)
-        #Postprocess image
-        vis_specs=self.visualizations
+        # Postprocess image
+        vis_specs = self.visualizations
         visualizers = []
         extractors = []
         for vis_spec in vis_specs:
-                texture_atlas=None
-                texture_atlases_map=None
-                texture_atlas = get_texture_atlas(texture_atlas)
-                texture_atlases_dict = get_texture_atlases(texture_atlases_map)
-                try:
-                    vis = self.cls.VISUALIZERS[vis_spec](
-                        cfg=self.cfg,
-                        texture_atlas=texture_atlas,
-                        texture_atlases_dict=texture_atlases_dict,
-                    )
-                except:
-                    print("Không khởi tạo được tham số !!!!!!")
-                visualizers.append(vis)
-                extractor = create_extractor(vis)
-                extractors.append(extractor)
+            texture_atlas = None
+            texture_atlases_map = None
+            texture_atlas = get_texture_atlas(texture_atlas)
+            texture_atlases_dict = get_texture_atlases(texture_atlases_map)
+            try:
+                vis = self.cls.VISUALIZERS[vis_spec](
+                    cfg=self.cfg,
+                    texture_atlas=texture_atlas,
+                    texture_atlases_dict=texture_atlases_dict,
+                )
+            except:
+                print("Không khởi tạo được tham số !!!!!!")
+            visualizers.append(vis)
+            extractor = create_extractor(vis)
+            extractors.append(extractor)
         visualizer = CompoundVisualizer(visualizers)
         extractor = CompoundExtractor(extractors)
         context = {
-        "extractor": extractor,
-        "visualizer": visualizer,
-            }
+            "extractor": extractor,
+            "visualizer": visualizer,
+        }
         visualizer = context["visualizer"]
         extractor = context["extractor"]
         data = extractor(output)
         image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         image = np.tile(image[:, :, np.newaxis], [1, 1, 3])
         image_vis = visualizer.visualize(image, data)
-        return image_vis,bbox
-if __name__ =="__main__":
-    test_case=DensePose(model_path="../weights/model_final_162be9.pkl",model_config_path="../detectron2/projects/DensePose/configs/densepose_rcnn_R_50_FPN_s1x.yaml")
-    
+        return image_vis, bbox
+
+
+if __name__ == "__main__":
+    test_case = DensePose(
+        model_path="../weights/model_final_162be9.pkl",
+        model_config_path="../detectron2/projects/DensePose/configs/densepose_rcnn_R_50_FPN_s1x.yaml",
+    )
+
     # rtsp_path = 'rtsp://admin:KQTOWR@192.168.1.38:554'
 
     cap = cv2.VideoCapture(0)
@@ -386,26 +415,23 @@ if __name__ =="__main__":
 
     if not cap.isOpened():
         sys.exit()
-    
+
     frame_width = int(cap.get(3))
     frame_height = int(cap.get(4))
     size = (frame_width, frame_height)
-    result = cv2.VideoWriter('filename.avi', cv2.VideoWriter_fourcc(*'MJPG'), 10, size)
+    result = cv2.VideoWriter("filename.avi", cv2.VideoWriter_fourcc(*"MJPG"), 10, size)
     while True:
         ret, img = cap.read()
-        n+=1
+        n += 1
         if ret == True:
-            if n % 3 ==0:
-                image_res, box=test_case.inference(img)
+            if n % 3 == 0:
+                image_res, box = test_case.inference(img)
                 result.write(image_res)
                 print(box)
-            
+
             if n == 1000:
                 break
-            print("save frame ",n)
+            print("save frame ", n)
     cap.release()
     result.release()
     cv2.destroyAllWindows()
-
-
-    

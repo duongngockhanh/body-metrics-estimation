@@ -3,10 +3,8 @@ import numpy as np
 
 path = "quang2.jpg"
 
-coors = np.array([[460,480],
- [500,560],
- [560,630]])
- 
+coors = np.array([[460, 480], [500, 560], [560, 630]])
+
 
 img = cv2.imreadS(path)
 for i in coors:

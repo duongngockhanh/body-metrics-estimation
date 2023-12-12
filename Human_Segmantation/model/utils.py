@@ -11,4 +11,4 @@ def load_matched_state_dict(model, state_dict, print_stats=True):
             num_matched += 1
     model.load_state_dict(curr_state_dict)
     if print_stats:
-        print(f'Loaded state_dict: {num_matched}/{num_total} matched')
+        print(f"Loaded state_dict: {num_matched}/{num_total} matched")

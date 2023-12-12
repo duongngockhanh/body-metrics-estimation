@@ -12,7 +12,7 @@ sys.path.append(pose_path)
 from Human_pose import Human_Pose
 
 
-class Estimation():
+class Estimation:
     def __init__(self, task, weight):
         self.task = task
         self.weight = weight
@@ -33,9 +33,11 @@ class Estimation():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task', type=str, default="seg")
-    parser.add_argument('--weight', type=str, default="Human_Segmantation/weights/SGHM-ResNet50.pth")
-    parser.add_argument('--image', type=str, required=True)
+    parser.add_argument("--task", type=str, default="seg")
+    parser.add_argument(
+        "--weight", type=str, default="Human_Segmantation/weights/SGHM-ResNet50.pth"
+    )
+    parser.add_argument("--image", type=str, required=True)
     opt = parser.parse_args()
 
     estimator = Estimation(opt.task, opt.weight)

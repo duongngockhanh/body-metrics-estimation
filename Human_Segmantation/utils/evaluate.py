@@ -1,12 +1,16 @@
 import cv2
 import numpy as np
 
+
 class MetricIOU:
     def __call__(self, pred, true):
         pred_mask = pred > 0.5
         true_mask = true > 0.5
-        iou = (pred_mask & true_mask).astype(np.float32).sum() / ((pred_mask | true_mask).astype(np.float32).sum()+1e-8)
-        return iou*100.0
+        iou = (pred_mask & true_mask).astype(np.float32).sum() / (
+            (pred_mask | true_mask).astype(np.float32).sum() + 1e-8
+        )
+        return iou * 100.0
+
 
 class MetricMAD:
     def __call__(self, pred, true):
@@ -25,8 +29,8 @@ class MetricGRAD:
     def __call__(self, pred, true):
         pred_normed = np.zeros_like(pred)
         true_normed = np.zeros_like(true)
-        cv2.normalize(pred, pred_normed, 1., 0., cv2.NORM_MINMAX)
-        cv2.normalize(true, true_normed, 1., 0., cv2.NORM_MINMAX)
+        cv2.normalize(pred, pred_normed, 1.0, 0.0, cv2.NORM_MINMAX)
+        cv2.normalize(true, true_normed, 1.0, 0.0, cv2.NORM_MINMAX)
 
         true_grad = self.gauss_gradient(true_normed).astype(np.float32)
         pred_grad = self.gauss_gradient(pred_normed).astype(np.float32)
@@ -35,24 +39,31 @@ class MetricGRAD:
         return grad_loss / 1000
 
     def gauss_gradient(self, img):
-        img_filtered_x = cv2.filter2D(img, -1, self.filter_x, borderType=cv2.BORDER_REPLICATE)
-        img_filtered_y = cv2.filter2D(img, -1, self.filter_y, borderType=cv2.BORDER_REPLICATE)
-        return np.sqrt(img_filtered_x ** 2 + img_filtered_y ** 2)
+        img_filtered_x = cv2.filter2D(
+            img, -1, self.filter_x, borderType=cv2.BORDER_REPLICATE
+        )
+        img_filtered_y = cv2.filter2D(
+            img, -1, self.filter_y, borderType=cv2.BORDER_REPLICATE
+        )
+        return np.sqrt(img_filtered_x**2 + img_filtered_y**2)
 
     @staticmethod
     def gauss_filter(sigma, epsilon=1e-2):
-        half_size = np.ceil(sigma * np.sqrt(-2 * np.log(np.sqrt(2 * np.pi) * sigma * epsilon)))
+        half_size = np.ceil(
+            sigma * np.sqrt(-2 * np.log(np.sqrt(2 * np.pi) * sigma * epsilon))
+        )
         size = np.int64(2 * half_size + 1)
 
         # create filter in x axis
         filter_x = np.zeros((size, size))
         for i in range(size):
             for j in range(size):
-                filter_x[i, j] = MetricGRAD.gaussian(i - half_size, sigma) * MetricGRAD.dgaussian(
-                    j - half_size, sigma)
+                filter_x[i, j] = MetricGRAD.gaussian(
+                    i - half_size, sigma
+                ) * MetricGRAD.dgaussian(j - half_size, sigma)
 
         # normalize filter
-        norm = np.sqrt((filter_x ** 2).sum())
+        norm = np.sqrt((filter_x**2).sum())
         filter_x = filter_x / norm
         filter_y = np.transpose(filter_x)
 
@@ -60,11 +71,11 @@ class MetricGRAD:
 
     @staticmethod
     def gaussian(x, sigma):
-        return np.exp(-x ** 2 / (2 * sigma ** 2)) / (sigma * np.sqrt(2 * np.pi))
+        return np.exp(-(x**2) / (2 * sigma**2)) / (sigma * np.sqrt(2 * np.pi))
 
     @staticmethod
     def dgaussian(x, sigma):
-        return -x * MetricGRAD.gaussian(x, sigma) / sigma ** 2
+        return -x * MetricGRAD.gaussian(x, sigma) / sigma**2
 
 
 class MetricCONN:
@@ -79,7 +90,8 @@ class MetricCONN:
 
             # connected components
             _, output, stats, _ = cv2.connectedComponentsWithStats(
-                intersection, connectivity=4)
+                intersection, connectivity=4
+            )
             # start from 1 in dim 0 to exclude background
             size = stats[1:, -1]
 
