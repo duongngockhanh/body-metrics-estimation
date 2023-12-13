@@ -1,4 +1,4 @@
-import freenect
+# import freenect
 import cv2, PIL, uvicorn
 from io import BytesIO
 from fastapi import FastAPI, Request
@@ -8,6 +8,9 @@ from pydantic import BaseModel
 from scan3d import DensePose
 import numpy as np
 import os, sys, math
+import pandas as pd
+from general_utils import *
+
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -37,62 +40,16 @@ scan_model = DensePose(
 )
 
 
-# 2. Tạo các class chuyên biệt
-
-
-# 2.1 Tạo class HeightMeasure để tính chiều cao
-class HeightMeasure:
-    def __init__(self, d=285, f=650.1):
-        self.d = d
-        self.f = f
-
-    def calculate_box(self, boxes):
-        for box in boxes:
-            x1, y1, x2, y2 = box
-            w = abs(y2 - y1)
-            return w * self.d / self.f
-
-    def calculate_point(self, point1, point2):
-        w = math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
-        return w * self.d / self.f
-
-
 measure = HeightMeasure()
-
-
-# 3. Tạo các function chuyên biệt
-
-
-# 3.1. Tạo hàm tính khoảng cách 2 điểm
-def distance2d(a, b):
-    return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
-
-
-# 3.2. Tạo hàm lấy độ sâu của pixel từ cam
-def get_depth(depth_image, x, y):
-    depth_value = depth_image[y, x]
-    z_meters = 1.0 / (depth_value * -0.0030711016 + 3.3309495161)
-    return z_meters
-
-
-# 3.3. Tạo các hàm tính độ rộng của vai
-def compute_each_shoulder_length(img, coor):
-    result = np.where(np.array(img) > 100, 255, 0)
-    arr_sho = result[coor[1]]
-    indexes = np.array(np.where(arr_sho == 255)).flatten()
-    return indexes[-1] - indexes[0]
-
-
-def get_max_shoulder_length(img, r_sho, l_sho):
-    return max(
-        compute_each_shoulder_length(img, r_sho),
-        compute_each_shoulder_length(img, l_sho),
-    )
 
 
 # 4. Các biến toàn cục
 
-# 4.1. Tạo result_dict để lưu các thông tin quan trọng
+# 4.1. Tạo các biến toàn cục
+scale_on_web = (320, 320)
+
+
+# 4.2. Tạo result_dict để lưu các thông tin quan trọng
 result_dict = {
     "height": 0,
     "ongchan": 0,
@@ -104,10 +61,11 @@ result_dict = {
     "l_show": 0,
     "keypoints": None,
     "hunchback_result": False,
+    "seg_list": [],
+    "pose_list": [],
+    "scan_list": [],
+    "view_list": [],
 }
-
-# 4.2. Tạo các biến toàn cục
-scale_on_web = (320, 320)
 
 
 # 5. Tạo các hàm tương tác với FE
@@ -119,10 +77,14 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+cap = cv2.VideoCapture(0)
+
+
 # 5.2. Hàm dùng để đẩy lần lượt các frames lên FE
 def gen_frames():
     while True:
-        frame = cv2.cvtColor(freenect.sync_get_video()[0], cv2.COLOR_BGR2RGB)
+        # frame = cv2.cvtColor(freenect.sync_get_video()[0],cv2.COLOR_BGR2RGB)
+        _, frame = cap.read()
         ret, buffer = cv2.imencode(".jpg", frame)
         frame = buffer.tobytes()
         yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
@@ -139,9 +101,12 @@ def video_feed():
 @app.post("/process_scan3d")
 def process_scan3d():
     frame = cv2.cvtColor(cv2.imread("other/quang.jpg"), cv2.COLOR_BGR2RGB)
+    # _, frame = cap.read()
     # frame = cv2.cvtColor(freenect.sync_get_video()[0],cv2.COLOR_BGR2RGB)
 
     result, boxes = scan_model.inference(frame)
+
+    result_dict["scan_list"].append(result)
     ###
     # W = 183
     # d = 285
@@ -177,10 +142,13 @@ def process_scan3d():
 @app.post("/process_seg")
 def process_seg():
     frame = cv2.cvtColor(cv2.imread("other/quang.jpg"), cv2.COLOR_BGR2RGB)
+    # _, frame = cap.read()
+    result_dict["view_list"].append(frame)
     # frame = cv2.cvtColor(freenect.sync_get_video()[0],cv2.COLOR_BGR2RGB)
     frame = PIL.Image.fromarray(frame)
     result, _ = seg_model.infer(frame)  # (480, 640)
     result = np.array(result)
+    result_dict["seg_list"].append(result)
 
     # Đo chiều cao theo pixel:
     temp = np.where(result > 100, 255, 0)
@@ -209,10 +177,18 @@ def process_seg():
 @app.post("/process_pose")
 def process_pose():
     frame = cv2.cvtColor(cv2.imread("other/quang.jpg"), cv2.COLOR_BGR2RGB)
+    # _, frame = cap.read()
     # frame = cv2.cvtColor(freenect.sync_get_video()[0],cv2.COLOR_BGR2RGB)
     result, keypoints = pose_model.infer(frame)  # (480, 640)
+
+    result_dict["pose_list"].append(result)
+    result_dict["keypoints"] = keypoints
+
     keypoints_list = keypoints.tolist()
     print(keypoints_list)
+
+    result_dict["keypoints"] = keypoints_list
+
     result_dict["r_sho"] = list(map(int, keypoints_list[2]))
     result_dict["l_sho"] = list(map(int, keypoints_list[5]))
     """
@@ -289,6 +265,23 @@ def process_pose():
 # 5.6. Hàm đưa dữ liệu lên FE
 @app.post("/process_data")
 def process_data():
+    mydataset = {
+        "information": list(result_dict.keys())[:5],
+        "figures": list(result_dict.values())[:5],
+        "assessment": [0] * 5,
+    }
+    myvar = pd.DataFrame(mydataset)
+    myvar.to_csv(index=False)
+
+    # Lưu dữ liệu thành tệp CSV
+    csv_filename = "data.csv"
+    myvar.to_csv(csv_filename, index=False)
+
+    # Lưu dữ liệu thành tệp Excel
+    excel_filename = "data.xlsx"
+    myvar.to_excel(excel_filename, index=False)
+
+    # Hiển thị số liệu lên web
     return {
         "height": int(result_dict["height"]),
         "ongchan": result_dict["ongchan"],
@@ -312,6 +305,109 @@ def initMeasure(param: DFParam):
     measure.f = f_param
     print("d--------------", type(d_param))
     print("f--------------", type(f_param))
+
+
+"""
+'nose', 'neck', 'r_sho', 'r_elb', 'r_wri', 
+'l_sho', 'l_elb', 'l_wri', 'r_hip', 'r_knee', 
+'r_ank', 'l_hip', 'l_knee', 'l_ank', 'r_eye', 
+'l_eye', 'r_ear', 'l_ear'
+"""
+
+
+@app.post("/cut_image_00")
+def cut_image_00():
+    keypoints = result_dict["keypoints"]
+    frontal_pose = result_dict["pose_list"][0]
+    image_00 = frontal_pose[keypoints[8][1] :]
+    cv2.imwrite("images_result/image_00.jpg", image_00)
+
+    result = image_00
+    result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
+    result = PIL.Image.fromarray(result)
+
+    image_buffer = BytesIO()
+    result.save(image_buffer, format="JPEG")
+    image_buffer.seek(0)
+
+    return StreamingResponse(image_buffer, media_type="image/jpeg")
+
+
+@app.post("/cut_image_01")
+def cut_image_01():
+    keypoints = result_dict["keypoints"]
+    frontal_pose = result_dict["pose_list"][0]
+    image_01 = frontal_pose[: keypoints[8][1]]
+    cv2.imwrite("images_result/image_01.jpg", image_01)
+
+    result = image_01
+    result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
+    result = PIL.Image.fromarray(result)
+
+    image_buffer = BytesIO()
+    result.save(image_buffer, format="JPEG")
+    image_buffer.seek(0)
+
+    return StreamingResponse(image_buffer, media_type="image/jpeg")
+
+
+@app.post("/cut_image_10")
+def cut_image_10():
+    keypoints = result_dict["keypoints"]
+    frontal_pose = result_dict["pose_list"][0]
+    image_10 = frontal_pose[keypoints[8][1] :]
+    cv2.imwrite("images_result/image_10.jpg", image_10)
+
+    result = image_10
+    result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
+    result = PIL.Image.fromarray(result)
+
+    image_buffer = BytesIO()
+    result.save(image_buffer, format="JPEG")
+    image_buffer.seek(0)
+
+    return StreamingResponse(image_buffer, media_type="image/jpeg")
+
+
+@app.post("/cut_image_11")
+def cut_image_11():
+    keypoints = result_dict["keypoints"]
+    profile_pose = result_dict["pose_list"][1]
+    image_11 = profile_pose[: keypoints[8][1]]
+    cv2.imwrite("images_result/image_11.jpg", image_11)
+
+    result = image_11
+    result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
+    result = PIL.Image.fromarray(result)
+
+    image_buffer = BytesIO()
+    result.save(image_buffer, format="JPEG")
+    image_buffer.seek(0)
+
+    return StreamingResponse(image_buffer, media_type="image/jpeg")
+
+
+@app.post("/show_table")
+def show_table():
+    dis_2knee = distance_bet_2knee(result_dict["seg_list"][0], result_dict["keypoints"])
+    point_max_l, point_max_r, sho_asymmetry = angle_bet_hip_neck(
+        result_dict["seg_list"][0], result_dict["keypoints"]
+    )
+    # angle_hip_neck = angle_neck_hip(profile_mask, keypoints)
+    # dis_2knee = "dis_2knee"
+    # point_max_l,point_max_r,sho_asymmetry = "point_max_l","point_max_r","sho_asymmetry"
+    angle_hip_neck = "angle_hip_neck"
+
+    cut_image_00()
+    cut_image_01()
+    cut_image_10()
+    cut_image_11()
+
+    return {
+        "dis_2knee": int(dis_2knee),
+        "sho_asymmetry": int(sho_asymmetry),
+        "angle_hip_neck": angle_hip_neck,
+    }
 
 
 # 6. Hàm main

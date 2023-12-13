@@ -1,5 +1,11 @@
 <!DOCTYPE html>
 <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <title>Document</title>
+    </head>
     <style>
         .container {
             display: grid;
@@ -60,7 +66,16 @@
         .parentPoseContainter {
             position: relative;
         }
-        
+        .equal-width-table {
+            width: 100%; /* Đảm bảo bảng chiếm hết chiều rộng của phần tử cha */
+            table-layout: fixed; /* Thiết lập cách cột được phân phối */
+            border-collapse: collapse; /* Loại bỏ khoảng cách giữa viền ô */
+        }
+
+        .equal-width-table td {
+            width: 50%; /* Chia đều chiều rộng cho cả hai cột */
+            border: none; /* Loại bỏ viền cho mỗi ô */
+        }
     </style>
 
 
@@ -73,16 +88,24 @@
                 <br>
                 <button type="button" onclick="processScan()">Scan3D</button>
                 <button type="button" onclick="processPose()">Pose</button>
-                <button type="button" onclick="processSeg()">Seg</button><br>
+                <button type="button" onclick="processSeg()">Seg</button>
+                <button type="button" onclick="processAll()">All</button>
+                <br>
+
                 <button type="button" onclick="processScan90()">Scan3D90</button>
                 <button type="button" onclick="processPose90()">Pose90</button>
                 <button type="button" onclick="processSeg90()">Seg90</button>
-                <button type="button" onclick="sendData()" id="sendButton">Send Data</button><br>
+                <button type="button" onclick="processAll90()">All90</button>
+                <br>
+
+                <button type="button" onclick="sendData()" id="sendButton">Send Data</button>
+                <br>
+
                 <label for="d_param">Enter d_param:</label>
                 <input type="text" id="d_param" name="d_param"><br>                             
                 <label for="f_param">Enter f_param:</label>
                 <input type="text" id="f_param" name="f_param">
-                <button onclick="sendData2InitMeasure()">Init Measure</button><br>
+                <button onclick="sendData2InitMeasure()">Init Measure</button>
             </div>
             <div class="block">
                 <h3>Scan 3D</h3>
@@ -147,8 +170,55 @@
                 <div id="processedSegContainer90"></div>
             </div>
         </div>
+        <button type="button" onclick="showTable()">Show Table</button>
+        <div class="tableInformation">
+            <table>
+                <tr>
+                    <td>
+                        <div id="cut_image_00"></div>
+                    </td>
+                    <td>
+                        <div id="cut_image_01"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table class="equal-width-table">
+                            <tr><td>tableintable</td></tr>
+                            <tr><td>tableintable</td></tr>
+                        </table>
+                    </td>
+                    <td>
+                        <table class="equal-width-table">
+                            <!-- <tr><td>point_max_l</td><td id="point_max_l"></td></tr>
+                            <tr><td>point_max_r</td><td id="point_max_r"></td></tr> -->
+                            <tr><td>sho_asymmetry</td><td id="sho_asymmetry"></td></tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div id="cut_image_10"></div>
+                    </td>
+                    <td>
+                        <div id="cut_image_11"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table class="equal-width-table">
+                            <tr><td>dis_2knee</td><td id="dis_2knee"></td></tr>
+                        </table>
+                    </td>
+                    <td>
+                        <table class="equal-width-table">
+                            <tr><td>angle_hip_neck</td><td id="angle_hip_neck"></td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
 
-        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
         <script>
             async function processScan() {
                 const response = await axios.post('/process_scan3d', {
@@ -165,8 +235,8 @@
                     processedImageContainer.appendChild(processedImage);
                 }
             }
-        </script>
-        <script>
+
+            
             async function processSeg() {
                 const response = await axios.post('/process_seg', {
                 }, {
@@ -182,8 +252,8 @@
                     processedImageContainer.appendChild(processedImage);
                 }
             }
-        </script>
-        <script>
+
+
             async function processPose() {
                 const response = await axios.post('/process_pose', {
 
@@ -200,8 +270,14 @@
                     processedImageContainer.appendChild(processedImage);
                 }
             }
-        </script>
-        <script>
+
+            async function processAll(){
+                processScan();
+                processPose();
+                processSeg();
+            }
+
+
             async function processScan90() {
                 const response = await axios.post('/process_scan3d', {
                 }, {
@@ -217,8 +293,8 @@
                     processedImageContainer.appendChild(processedImage);
                 }
             }
-        </script>
-        <script>
+
+
             async function processSeg90() {
                 const response = await axios.post('/process_seg', {
                 }, {
@@ -234,8 +310,8 @@
                     processedImageContainer.appendChild(processedImage);
                 }
             }
-        </script>
-        <script>
+
+
             async function processPose90() {
                 const response = await axios.post('/process_pose', {
 
@@ -252,8 +328,13 @@
                     processedImageContainer.appendChild(processedImage);
                 }
             }
-        </script>
-        <script>
+
+            async function processAll90(){
+                processScan90();
+                processPose90();
+                processSeg90();
+            }
+
             function sendData() {            
                 fetch('/process_data', {
                     method: 'POST',
@@ -278,8 +359,8 @@
                     dosau.textContent = data.dosau;
                 });
             }
-        </script>
-        <script>
+
+
             function sendData2InitMeasure() {
                 var d_param = document.getElementById('d_param').value;
                 var f_param = document.getElementById('f_param').value;
@@ -296,15 +377,13 @@
                     // Handle the response from the backend
                 });
             }
-        </script>
-        <script>
+
+
             const lineAfter2 = document.querySelector('.line1c');
             lineAfter2.innerHTML="ok"
             const lineAfter = document.querySelector('.line1b');
             lineAfter.style.width = "100px"
-        </script>
 
-        <script>
             var line1b = document.querySelector('.line1b');
             var toggleButton = document.getElementById('sendButton');
             var isLineVisible = false;
@@ -315,6 +394,101 @@
                     isLineVisible = true;
                 }
             });
+
+            function showTable() {            
+                fetch('/show_table', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify()
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const dis_2knee = document.getElementById('dis_2knee');
+                    dis_2knee.textContent = data.dis_2knee;
+                    // const point_max_l = document.getElementById('point_max_l');
+                    // point_max_l.textContent = data.point_max_l;
+                    // const point_max_r = document.getElementById('point_max_r');
+                    // point_max_r.textContent = data.point_max_r;
+                    const sho_asymmetry = document.getElementById('sho_asymmetry');
+                    sho_asymmetry.textContent = data.sho_asymmetry;
+                    const angle_hip_neck = document.getElementById('angle_hip_neck');
+                    angle_hip_neck.textContent = data.angle_hip_neck;
+                });
+                cut_image_00();
+                cut_image_10();
+                cut_image_01();
+                cut_image_11();
+            }
+
+            async function cut_image_00() {
+                const response = await axios.post('/cut_image_00', {
+
+                }, {
+                    responseType: 'blob'
+                });
+            
+                if (response.status === 200) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.data);
+                
+                    const processedImageContainer = document.getElementById('cut_image_00');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
+
+            async function cut_image_01() {
+                const response = await axios.post('/cut_image_01', {
+
+                }, {
+                    responseType: 'blob'
+                });
+            
+                if (response.status === 200) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.data);
+                
+                    const processedImageContainer = document.getElementById('cut_image_01');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
+
+            async function cut_image_10() {
+                const response = await axios.post('/cut_image_10', {
+
+                }, {
+                    responseType: 'blob'
+                });
+            
+                if (response.status === 200) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.data);
+                
+                    const processedImageContainer = document.getElementById('cut_image_10');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
+
+            async function cut_image_11() {
+                const response = await axios.post('/cut_image_11', {
+
+                }, {
+                    responseType: 'blob'
+                });
+            
+                if (response.status === 200) {
+                    const processedImage = document.createElement('img');
+                    processedImage.src = URL.createObjectURL(await response.data);
+                
+                    const processedImageContainer = document.getElementById('cut_image_11');
+                    processedImageContainer.innerHTML = '';
+                    processedImageContainer.appendChild(processedImage);
+                }
+            }
         </script>
     </body>
 </html>
