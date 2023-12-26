@@ -9,8 +9,8 @@
     <style>
         .container {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
             flex-wrap: nowrap;
         }
 
@@ -82,21 +82,51 @@
 
     <body>
         <div class="container">
-        <!-- ++++++++++++++++++++++++++++ Dòng 1 ++++++++++++++++++++++++++++ -->
             <div class="block">
                 <h3>Live Streaming</h3>
                 <img id="videoStream" src="{{ url_for('video_feed') }}" width="100%">
                 <br>
-                <button type="button" onclick="processTruoc()">Truoc</button>
-                <button type="button" onclick="processNghieng()">Nghieng</button>
-                <button type="button" onclick="processSau()">Sau</button>
-                <button type="button" onclick="sendData()" id="sendButton">Send Data</button></br></br>
+                <button type="button" onclick="processScan()">Scan3D</button>
+                <button type="button" onclick="processPose()">Pose</button>
+                <button type="button" onclick="processSeg()">Seg</button>
+                <button type="button" onclick="processAll()">All</button>
+                <br>
+
+                <button type="button" onclick="processScan90()">Scan3D90</button>
+                <button type="button" onclick="processPose90()">Pose90</button>
+                <button type="button" onclick="processSeg90()">Seg90</button>
+                <button type="button" onclick="processAll90()">All90</button>
+                <br>
+
+                <button type="button" onclick="processScanSau()">Scan3DSau</button>
+                <button type="button" onclick="processPoseSau()">PoseSau</button>
+                <button type="button" onclick="processSegSau()">SegSau</button>
+                <button type="button" onclick="processAllSau()">AllSau</button>
+                <br>
+
+                <button type="button" onclick="sendData()" id="sendButton">Send Data</button>
+                <br>
 
                 <label for="d_param">Enter d_param:</label>
                 <input type="text" id="d_param" name="d_param"><br>                             
                 <label for="f_param">Enter f_param:</label>
                 <input type="text" id="f_param" name="f_param">
                 <button onclick="sendData2InitMeasure()">Init Measure</button>
+            </div>
+            <div class="block">
+                <h3>Scan 3D</h3>
+                <div id="processedScanContainer"></div>
+            </div>
+            <div class="block">
+                <h3>Pose</h3>
+                <div class="parentPoseContainter">
+                    <div id="processedPoseContainer"></div>
+                    <div class="line1a"><div class="line1b"><div class="line1c">132</div></div></div>
+                </div>
+            </div>
+            <div class="block">
+                <h3>Trước</h3>
+                <div id="processedSegContainer"></div>
             </div>
             <div class="block">
                 <h3>Bảng thống kê</h3>
@@ -110,6 +140,26 @@
                         <td>Chiều cao</td>
                         <td id="height">x</td>
                         <td>x</td>
+                    </tr>
+                    <tr>
+                        <td>Độ dài ống xương chân</td>
+                        <td id="ongchan">x</td>
+                        <td>x</td>
+                    </tr>
+                    <tr>
+                        <td>Khoảng cách giữa 2 đầu gối</td>
+                        <td id="haidaugoi">x</td>
+                        <td>x</td>
+                    </tr>
+                    <tr>
+                        <td>Chiều dài thân</td>
+                        <td id="chieudaithan">x</td>
+                        <td>x</td>
+                    </tr>
+                    <tr>
+                        <td>Độ lệch giữa 2 vai</td>
+                        <td id="dolechvai">x</td>
+                        <td id="dosau">x</td>
                     </tr>
                     <tr>
                         <td>DAy</td>
@@ -126,6 +176,7 @@
                         <td id="CAx">x</td>
                         <td>x</td>
                     </tr>
+
                     <tr>
                         <td>kc_2_knee</td>
                         <td id="kc_2_knee">x</td>
@@ -136,6 +187,7 @@
                         <td id="kc_2_ank">x</td>
                         <td>x</td>
                     </tr>
+
                     <tr>
                         <td>CAz</td>
                         <td id="CAz">x</td>
@@ -146,6 +198,7 @@
                         <td id="ABz">x</td>
                         <td>x</td>
                     </tr>
+
                     <tr>
                         <td>angle_A_right</td>
                         <td id="angle_A_right">x</td>
@@ -169,33 +222,34 @@
                 </table>
             </div>
             <div class="block">
-                <h3>Bảng thống kê 2</h3>
-            </div>
-
-
-
-
-            
-        <!-- ++++++++++++++++++++++++++++ Dòng 2 ++++++++++++++++++++++++++++ -->
-            <div class="block">
-                <h3>Truoc</h3>
-                <div id="processedSegContainer"></div>
+                <h3>Scan 3D 90</h3>
+                <div id="processedScanContainer90"></div>
             </div>
             <div class="block">
-                <h3>Nghieng</h3>
+                <h3>Pose 90</h3>
+                <div id="processedPoseContainer90"></div>
+            </div>
+            <div class="block">
+                <h3>Segmentation 90</h3>
                 <div id="processedSegContainer90"></div>
             </div>
             <div class="block">
-                <h3>Sau</h3>
+                <h3>Bảng thống kê 2</h3>
+                <!-- <div id="processedScanContainer90"></div> -->
+            </div>
+            <div class="block">
+                <h3>Scan 3D Sau</h3>
+                <div id="processedScanContainerSau"></div>
+            </div>
+            <div class="block">
+                <h3>Pose Sau</h3>
+                <div id="processedPoseContainerSau"></div>
+            </div>
+            <div class="block">
+                <h3>Segmentation Sau</h3>
                 <div id="processedSegContainerSau"></div>
             </div>
         </div>
-
-
-
-
-
-        <!-- ++++++++++++++++++++++++++++ Show Table ++++++++++++++++++++++++++++ -->
         <button type="button" onclick="showTable()">Show Table</button>
         <div class="tableInformation">
             <table>
@@ -245,13 +299,7 @@
             </table>
         </div>
 
-
-
-
-
-        <!-- ++++++++++++++++++++++++++++ Script ++++++++++++++++++++++++++++ -->
         <script>
-            // ++++++++++++++++++++++++++++ e1. Trước ++++++++++++++++++++++++++++
             async function processScan() {
                 const response = await axios.post('/process_scan3d', {
                 }, {
@@ -268,7 +316,7 @@
                 }
             }
 
-
+            
             async function processSeg() {
                 const response = await axios.post('/process_seg', {
                 }, {
@@ -303,17 +351,13 @@
                 }
             }
 
-
-            async function processTruoc(){
+            async function processAll(){
+                processScan();
                 processPose();
                 processSeg();
             }
 
 
-
-
-
-            // ++++++++++++++++++++++++++++ e1. Nghiêng ++++++++++++++++++++++++++++
             async function processScan90() {
                 const response = await axios.post('/process_scan3d', {
                 }, {
@@ -365,16 +409,12 @@
                 }
             }
 
-            async function processNghieng(){
+            async function processAll90(){
+                processScan90();
                 processPose90();
                 processSeg90();
             }
 
-
-
-
-
-            // ++++++++++++++++++++++++++++ e3. Sau ++++++++++++++++++++++++++++            
             async function processScanSau() {
                 const response = await axios.post('/process_scan3d', {
                 }, {
@@ -426,16 +466,12 @@
                 }
             }
 
-            async function processSau(){
+            async function processAllSau(){
+                processScanSau();
                 processPoseSau();
                 processSegSau();
             }
 
-
-
-
-
-            // ++++++++++++++++++++++++++++ e4. Gửi data ++++++++++++++++++++++++++++
             function sendData() {            
                 fetch('/process_data', {
                     method: 'POST',
@@ -448,8 +484,34 @@
                 .then(data => {
                     const height = document.getElementById('height');
                     height.textContent = data.height;
-
+                    const ongchan = document.getElementById('ongchan');
+                    ongchan.textContent = data.ongchan;
+                    const haidaugoi = document.getElementById('haidaugoi');
+                    haidaugoi.textContent = data.haidaugoi;
+                    const chieudaithan = document.getElementById('chieudaithan');
+                    chieudaithan.textContent = data.chieudaithan;
+                    const dolechvai = document.getElementById('dolechvai');
+                    dolechvai.textContent = data.dolechvai;
                     
+                    const dosau = document.getElementById('dosau');
+                    dosau.textContent = data.dosau;
+
+
+                    // 'DAy': int(result_dict['DAy']),
+                    // 'BAz': int(result_dict['BAz']),
+                    // 'CAx': int(result_dict['CAx']),
+
+                    // 'kc_2_knee': int(result_dict['kc_2_knee']),
+                    // 'kc_2_ank': int(result_dict['kc_2_ank']),
+
+                    // 'CAz': int(result_dict['CAz']),
+                    // 'ABz': int(result_dict['ABz']),
+
+                    // 'angle_A_right': int(result_dict['angle_A_right']),
+                    // 'angle_A_left': int(result_dict['angle_A_left']),
+                    // 'angle_B_right': int(result_dict['angle_B_right']),
+                    // 'angle_B_left': int(result_dict['angle_B_left']),
+
                     const DAy = document.getElementById('DAy');
                     DAy.textContent = data.DAy;  
                     const BAz = document.getElementById('BAz');
@@ -483,10 +545,6 @@
             }
 
 
-
-
-
-            // ++++++++++++++++++++++++++++ e5. Khởi tạo 2 tham số ++++++++++++++++++++++++++++
             function sendData2InitMeasure() {
                 var d_param = document.getElementById('d_param').value;
                 var f_param = document.getElementById('f_param').value;
@@ -505,10 +563,22 @@
             }
 
 
+            const lineAfter2 = document.querySelector('.line1c');
+            lineAfter2.innerHTML="ok"
+            const lineAfter = document.querySelector('.line1b');
+            lineAfter.style.width = "100px"
 
+            var line1b = document.querySelector('.line1b');
+            var toggleButton = document.getElementById('sendButton');
+            var isLineVisible = false;
+    
+            toggleButton.addEventListener('click', function() {
+                if (!isLineVisible) {
+                    line1b.style.display = 'block';
+                    isLineVisible = true;
+                }
+            });
 
-
-            // ++++++++++++++++++++++++++++ f1. Show table script ++++++++++++++++++++++++++++
             function showTable() {            
                 fetch('/show_table', {
                     method: 'POST',
