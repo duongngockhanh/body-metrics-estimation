@@ -1,6 +1,5 @@
-# Body Metrics Estimation
+# Body Metrics Estimation System
 ```commandline
-cd Combine
 uvicorn app:app --reload
 ```
 
