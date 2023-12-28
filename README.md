@@ -1,5 +1,4 @@
-# Height Measurement
-
+# Body Metrics Estimation
 ```commandline
 cd Combine
 uvicorn app:app --reload
