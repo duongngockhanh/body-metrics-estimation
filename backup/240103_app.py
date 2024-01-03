@@ -11,7 +11,7 @@ import os, sys, math
 import pandas as pd
 from general_utils import *
 import time
-from foot_measurement import get_foot_measure
+
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -48,7 +48,7 @@ measure = HeightMeasure()
 
 # ---------------------------- f1. Các biến toàn cục ----------------------------
 
-scale_on_web = (600, 600)
+scale_on_web = (320, 320)
 
 kpt_names = ['nose', 'neck', 'r_sho', 'r_elb', 'r_wri', 
              'l_sho', 'l_elb', 'l_wri', 'r_hip', 'r_knee', 
@@ -58,10 +58,7 @@ kpt_names = ['nose', 'neck', 'r_sho', 'r_elb', 'r_wri',
 result_dict = {
     "height": 0,
     "keypoints": None,
-    # "seg_list": [],
-    "seg_truoc": None,
-    "seg_nghieng": None,
-    "seg_sau": None,
+    "seg_list": [],
     "pose_list": [],
     "scan_list": [],
     "view_list": [],
@@ -79,17 +76,15 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-# 5.2. Hàm dùng để đẩy lần lượt các frames lên FE - Body
 path = 0
 cap = cv2.VideoCapture(path)
 
 
+# 5.2. Hàm dùng để đẩy lần lượt các frames lên FE
 def gen_frames():
     while True:
         _, frame = cap.read()
         ret, buffer = cv2.imencode(".jpg", frame)
-        if not ret:
-            print("cam IP loi")
         frame = buffer.tobytes()
         yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
 
@@ -105,18 +100,11 @@ def video_feed():
 
 
 # ---------------------------- h1. Scan 3D ----------------------------
-# @app.post("/process_scan3d")
+@app.post("/process_scan3d")
 def process_scan3d():
     _, frame = cap.read()
     result, boxes = scan_model.inference(frame)
     result_dict["scan_list"].append(result)
-
-    # W = 167
-    # d = 325
-    # for box in boxes:
-    #     x1, y1, x2, y2 = box
-    #     w = abs(y2 - y1)
-    #     print("--------------------Tiêu cự dọc-----------------", w * d / W)
 
     height = measure.calculate_box(boxes)
     result_dict["height"] = round(height, 2)
@@ -128,7 +116,7 @@ def process_scan3d():
     image_buffer = BytesIO()
     result.save(image_buffer, format="JPEG")
     image_buffer.seek(0)
-    # return StreamingResponse(image_buffer, media_type="image/jpeg")
+    return StreamingResponse(image_buffer, media_type="image/jpeg")
 
 
 
@@ -144,31 +132,17 @@ def process_seg():
     result = np.array(result)
     mask = np.where(result > 100, 255, 0).astype(np.uint8)
     mask = np.stack((mask, mask, mask), axis=2)
-    result_dict["seg_truoc"] = mask
+    result_dict["seg_list"].append(mask)
     # ---------------------
 
-    DAy, BAz, CAx, img_draw = tinh_mom_vai(result_dict["seg_truoc"], result_dict["information"])
+    DAy, BAz, CAx, img_draw = tinh_mom_vai(result_dict["seg_list"][0], result_dict["information"])
     result_dict['DAy'] = DAy
     result_dict['BAz'] = BAz
     result_dict['CAx'] = CAx
 
-    f_ngang = 589
-    d = 325
-    kc_2_knee, kc_2_ank = tinh_khoang_cach_chan(result_dict["seg_truoc"], result_dict["information"])
-    result_dict['kc_2_knee'] = kc_2_knee * d / f_ngang
-    result_dict['kc_2_ank'] = kc_2_ank * d / f_ngang
-    
-    result_dict['leg_assessment'] = assess_leg(result_dict['kc_2_knee'], result_dict['kc_2_ank'])
-
-    process_scan3d() # Tính chiều cao
-
-    # Tính tiêu cự ngang
-    # width_pixel = tinh_chieu_ngang(result_dict["seg_truoc"])
-    # print("-----------------------width_pixel----------------", width_pixel)
-    # d = 325
-    # h = 48
-    # print("-----------------------Tiêu cự ngang----------------", d * width_pixel / h)
-    
+    kc_2_knee, kc_2_ank = tinh_khoang_cach_chan(result_dict["seg_list"][0], result_dict["information"])
+    result_dict['kc_2_knee'] = kc_2_knee
+    result_dict['kc_2_ank'] = kc_2_ank
 
     # ---------------------
     result = cv2.resize(img_draw, scale_on_web)
@@ -193,10 +167,10 @@ def process_seg_nghieng():
     result = np.array(result)
     mask = np.where(result > 100, 255, 0).astype(np.uint8)
     mask = np.stack((mask, mask, mask), axis=2)
-    result_dict["seg_nghieng"] = mask
+    result_dict["seg_list"].append(mask)
     # ---------------------
 
-    CAz, ABz, img_draw = tinh_cot_song(result_dict["seg_nghieng"], result_dict["information"])
+    CAz, ABz, img_draw = tinh_cot_song(result_dict["seg_list"][1], result_dict["information"])
     result_dict['CAz'] = CAz
     result_dict['ABz'] = ABz
     print(result_dict)
@@ -224,10 +198,10 @@ def process_seg_sau():
     result = np.array(result)
     mask = np.where(result > 100, 255, 0).astype(np.uint8)
     mask = np.stack((mask, mask, mask), axis=2)
-    result_dict["seg_sau"] = mask
+    result_dict["seg_list"].append(mask)
     # ---------------------
 
-    angle_A_right, angle_A_left, angle_B_right, angle_B_left, img_draw = tinh_goc_chan(result_dict["seg_sau"], result_dict["information"])
+    angle_A_right, angle_A_left, angle_B_right, angle_B_left, img_draw = tinh_goc_chan(result_dict["seg_list"][2], result_dict["information"])
     result_dict['angle_A_right'] = angle_A_right
     result_dict['angle_A_left'] = angle_A_left
     result_dict['angle_B_right'] = angle_B_right
@@ -267,11 +241,11 @@ def process_pose():
     image_buffer.seek(0)
     return StreamingResponse(image_buffer, media_type="image/jpeg")
 
-    
 
 
 
-# ---------------------------- k1. Send data body----------------------------
+
+# ---------------------------- k1. Send data ----------------------------
 @app.post("/process_data")
 def process_data():
     return {
@@ -291,46 +265,6 @@ def process_data():
         'angle_A_left': int(result_dict['angle_A_left']),
         'angle_B_right': int(result_dict['angle_B_right']),
         'angle_B_left': int(result_dict['angle_B_left']),
-
-        'leg_assessment': result_dict['leg_assessment'],
-    }
-
-
-
-
-
-# ---------------------------- j2. Capture Foot ----------------------------
-@app.post("/capture_foot")
-def capture_foot():
-    # _, frame = cap.read()
-    frame = cv2.imread('./other/e1_left_foot.jpeg')
-    foot_dict = get_foot_measure(frame, draw=False)
-    result_dict['distance_A'] = foot_dict['A']
-    result_dict['distance_B'] = foot_dict['B']
-    result_dict['distance_C'] = foot_dict['C']
-    result_dict['distance_D'] = foot_dict['D']
-    print(foot_dict)
-
-    result = cv2.resize(frame, scale_on_web)
-    result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
-    result = PIL.Image.fromarray(result)
-    image_buffer = BytesIO()
-    result.save(image_buffer, format="JPEG")
-    image_buffer.seek(0)
-    return StreamingResponse(image_buffer, media_type="image/jpeg")
-
-
-
-
-
-# ---------------------------- k1. Send data foot----------------------------
-@app.post("/process_data_foot")
-def process_data_foot():
-    return {
-        'distance_A': int(result_dict['distance_A']),
-        'distance_B': int(result_dict['distance_B']),
-        'distance_C': int(result_dict['distance_C']),
-        'distance_D': int(result_dict['distance_D']),
     }
 
 
@@ -351,7 +285,6 @@ def initMeasure(param: DFParam):
     measure.f = f_param
     print("d--------------", type(d_param))
     print("f--------------", type(f_param))
-
 
 
 
