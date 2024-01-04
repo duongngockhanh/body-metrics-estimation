@@ -200,22 +200,10 @@
 
         <!-- ++++++++++++++++++++++++++++ Dòng 3 ++++++++++++++++++++++++++++ -->
             <div class="block">
-                <h3>Left Foot</h3>
-                <form id="uploadForm" enctype="multipart/form-data">
-                    <input type="file" id="file_upload_left" name="file_upload_left" />
-                    <button type="button" onclick="uploadFootLeft()">Upload Foot Left</button>
-                </form>
-                <button type="button" onclick="sendDataFootLeft()" id="sendButton">Send Data Foot Left</button></br></br>
-                <div id="imageFootLeft"></div>
-            </div>
-            <div class="block">
-                <h3>Right Foot</h3>
-                <form id="uploadForm" enctype="multipart/form-data">
-                    <input type="file" id="file_upload_right" name="file_upload_right" />
-                    <button type="button" onclick="uploadFootRight()">Upload Foot Right</button>
-                </form>
-                <button type="button" onclick="sendDataFootRight()" id="sendButton">Send Data Foot Right</button></br></br>
-                <div id="imageFootRight"></div>
+                <h3>Foot Live Streaming</h3>
+                <img id="videoStream" src="{{ url_for('video_feed') }}" width="100%"><br>
+                <button type="button" onclick="captureFoot()">Capture Foot</button>
+                <button type="button" onclick="sendDataFoot()" id="sendButton">Send Data Foot</button></br></br>
             </div>
             <div class="block">
                 <h3>Foot Metrics</h3>
@@ -226,48 +214,30 @@
                         <th>Đơn vị</th>
                     </tr>
                     <tr>
-                        <td>Khoảng cách A trái</td>
-                        <td id="distance_A_left">x</td>
+                        <td>Khoảng cách A</td>
+                        <td id="distance_A">x</td>
                         <td>pixel</td>
                     </tr>
                     <tr>
-                        <td>Khoảng cách B trái</td>
-                        <td id="distance_B_left">x</td>
+                        <td>Khoảng cách B</td>
+                        <td id="distance_B">x</td>
                         <td>pixel</td>
                     </tr>
                     <tr>
-                        <td>Khoảng cách C trái</td>
-                        <td id="distance_C_left">x</td>
+                        <td>Khoảng cách C</td>
+                        <td id="distance_C">x</td>
                         <td>pixel</td>
                     </tr>
                     <tr>
-                        <td>Khoảng cách D trái</td>
-                        <td id="distance_D_left">x</td>
+                        <td>Khoảng cách D</td>
+                        <td id="distance_D">x</td>
                         <td>pixel</td>
                     </tr>
-                    <tr>
-                        <td>Khoảng cách A phải</td>
-                        <td id="distance_A_right">x</td>
-                        <td>pixel</td>
-                    </tr>
-                    <tr>
-                        <td>Khoảng cách B phải</td>
-                        <td id="distance_B_right">x</td>
-                        <td>pixel</td>
-                    </tr>
-                    <tr>
-                        <td>Khoảng cách C phải</td>
-                        <td id="distance_C_right">x</td>
-                        <td>pixel</td>
-                    </tr>
-                    <tr>
-                        <td>Khoảng cách D phải</td>
-                        <td id="distance_D_right">x</td>
-                        <td>pixel</td>
-                    </tr>
-                </table></br>
-                <button type="button" onclick="showFootGlossary()" id="sendButton">Show Foot Glossary</button></br>
-                <div id="footGlossary"></div>
+                </table>
+            </div>
+            <div class="block">
+                <h3>Foot Result Image</h3>
+                <div id="footResultImage"></div>
             </div>
         </div>
 
@@ -567,56 +537,9 @@
 
 
 
-            // ++++++++++++++++++++++++++++ e4. Upload foot ++++++++++++++++++++++++++++
-            async function uploadFootLeft(file_upload_left) {
-                const formData = new FormData();
-                const fileInput = document.getElementById('file_upload_left');
-                
-                formData.append('file_upload_left', fileInput.files[0]);
-                const response = await axios.post('/upload_foot_left', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                    responseType: 'blob'
-                });
-            
-                if (response.status === 200) {
-                    const processedImage = document.createElement('img');
-                    processedImage.src = URL.createObjectURL(await response.data);
-                
-                    const processedImageContainer = document.getElementById('imageFootLeft');
-                    processedImageContainer.innerHTML = '';
-                    processedImageContainer.appendChild(processedImage);
-                }
-            }
-
-
-            async function uploadFootRight() {
-                const formData = new FormData();
-                const fileInput = document.getElementById('file_upload_right');
-                
-                formData.append('file_upload_right', fileInput.files[0]);
-                const response = await axios.post('/upload_foot_right', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                    responseType: 'blob'
-                });
-            
-                if (response.status === 200) {
-                    const processedImage = document.createElement('img');
-                    processedImage.src = URL.createObjectURL(await response.data);
-                
-                    const processedImageContainer = document.getElementById('imageFootRight');
-                    processedImageContainer.innerHTML = '';
-                    processedImageContainer.appendChild(processedImage);
-                }
-            }
-
-            
-            async function showFootGlossary() {
-                const response = await axios.post('/show_foot_glossary', {
-
+            // ++++++++++++++++++++++++++++ e4. Capture foot ++++++++++++++++++++++++++++
+            async function captureFoot() {
+                const response = await axios.post('/capture_foot', {
                 }, {
                     responseType: 'blob'
                 });
@@ -625,7 +548,7 @@
                     const processedImage = document.createElement('img');
                     processedImage.src = URL.createObjectURL(await response.data);
                 
-                    const processedImageContainer = document.getElementById('footGlossary');
+                    const processedImageContainer = document.getElementById('footResultImage');
                     processedImageContainer.innerHTML = '';
                     processedImageContainer.appendChild(processedImage);
                 }
@@ -633,9 +556,11 @@
 
 
 
+
+
             // ++++++++++++++++++++++++++++ e4. Send data foot ++++++++++++++++++++++++++++
-            function sendDataFootLeft() {            
-                fetch('/process_data_foot_left', {
+            function sendDataFoot() {            
+                fetch('/process_data_foot', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -644,36 +569,14 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    const distance_A_left = document.getElementById('distance_A_left');
-                    distance_A_left.textContent = data.distance_A_left;  
-                    const distance_B_left = document.getElementById('distance_B_left');
-                    distance_B_left.textContent = data.distance_B_left;  
-                    const distance_C_left = document.getElementById('distance_C_left');
-                    distance_C_left.textContent = data.distance_C_left;  
-                    const distance_D_left = document.getElementById('distance_D_left');
-                    distance_D_left.textContent = data.distance_D_left;  
-                });
-            }
-
-
-            function sendDataFootRight() {            
-                fetch('/process_data_foot_right', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify()
-                })
-                .then(response => response.json())
-                .then(data => {
-                    const distance_A_left = document.getElementById('distance_A_right');
-                    distance_A_right.textContent = data.distance_A_right;  
-                    const distance_B_right = document.getElementById('distance_B_right');
-                    distance_B_right.textContent = data.distance_B_right;  
-                    const distance_C_right = document.getElementById('distance_C_right');
-                    distance_C_right.textContent = data.distance_C_right;  
-                    const distance_D_right = document.getElementById('distance_D_right');
-                    distance_D_right.textContent = data.distance_D_right;  
+                    const distance_A = document.getElementById('distance_A');
+                    distance_A.textContent = data.distance_A;  
+                    const distance_B = document.getElementById('distance_B');
+                    distance_B.textContent = data.distance_B;  
+                    const distance_C = document.getElementById('distance_C');
+                    distance_C.textContent = data.distance_C;  
+                    const distance_D = document.getElementById('distance_D');
+                    distance_D.textContent = data.distance_D;  
                 });
             }
 

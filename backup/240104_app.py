@@ -1,7 +1,7 @@
 # import freenect
 import cv2, PIL, uvicorn
 from io import BytesIO
-from fastapi import FastAPI, Request, File, UploadFile, Form
+from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -299,17 +299,16 @@ def process_data():
 
 
 
-# ---------------------------- j2. Upload Foot ----------------------------
-@app.post("/upload_foot_left")
-def upload_foot_left(file_upload_left: UploadFile = File(...)):
-    file_contents = file_upload_left.file.read() # receive the image in the form of bytearray
-    nparr = np.frombuffer(file_contents, np.uint8)
-    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR) # convert it to ndarray image
+# ---------------------------- j2. Capture Foot ----------------------------
+@app.post("/capture_foot")
+def capture_foot():
+    # _, frame = cap.read()
+    frame = cv2.imread('./other/e1_left_foot.jpeg')
     foot_dict = get_foot_measure(frame, draw=False)
-    result_dict['distance_A_left'] = foot_dict['A']
-    result_dict['distance_B_left'] = foot_dict['B']
-    result_dict['distance_C_left'] = foot_dict['C']
-    result_dict['distance_D_left'] = foot_dict['D']
+    result_dict['distance_A'] = foot_dict['A']
+    result_dict['distance_B'] = foot_dict['B']
+    result_dict['distance_C'] = foot_dict['C']
+    result_dict['distance_D'] = foot_dict['D']
     print(foot_dict)
 
     result = cv2.resize(frame, scale_on_web)
@@ -320,62 +319,18 @@ def upload_foot_left(file_upload_left: UploadFile = File(...)):
     image_buffer.seek(0)
     return StreamingResponse(image_buffer, media_type="image/jpeg")
 
-
-
-@app.post("/upload_foot_right")
-def upload_foot_right(file_upload_right: UploadFile = File(...)):
-    file_contents = file_upload_right.file.read() # receive the image in the form of bytearray
-    nparr = np.frombuffer(file_contents, np.uint8)
-    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR) # convert it to ndarray image
-    foot_dict = get_foot_measure(frame, draw=False)
-    result_dict['distance_A_right'] = foot_dict['A']
-    result_dict['distance_B_right'] = foot_dict['B']
-    result_dict['distance_C_right'] = foot_dict['C']
-    result_dict['distance_D_right'] = foot_dict['D']
-    print(foot_dict)
-
-    result = cv2.resize(frame, scale_on_web)
-    result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
-    result = PIL.Image.fromarray(result)
-    image_buffer = BytesIO()
-    result.save(image_buffer, format="JPEG")
-    image_buffer.seek(0)
-    return StreamingResponse(image_buffer, media_type="image/jpeg")
-
-
-
-@app.post("/show_foot_glossary")
-def upload_foot_left():
-    frame = cv2.imread("other/foot_glossary.jpg")
-    result = cv2.resize(frame, (int(scale_on_web[0]/2), int(scale_on_web[1]/2)))
-    result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
-    result = PIL.Image.fromarray(result)
-    image_buffer = BytesIO()
-    result.save(image_buffer, format="JPEG")
-    image_buffer.seek(0)
-    return StreamingResponse(image_buffer, media_type="image/jpeg")
 
 
 
 
 # ---------------------------- k1. Send data foot----------------------------
-@app.post("/process_data_foot_left")
-def process_data_foot_left():
+@app.post("/process_data_foot")
+def process_data_foot():
     return {
-        'distance_A_left': int(result_dict['distance_A_left']),
-        'distance_B_left': int(result_dict['distance_B_left']),
-        'distance_C_left': int(result_dict['distance_C_left']),
-        'distance_D_left': int(result_dict['distance_D_left']),
-    }
-
-
-@app.post("/process_data_foot_right")
-def process_data_foot_right():
-    return {
-        'distance_A_right': int(result_dict['distance_A_right']),
-        'distance_B_right': int(result_dict['distance_B_right']),
-        'distance_C_right': int(result_dict['distance_C_right']),
-        'distance_D_right': int(result_dict['distance_D_right']),
+        'distance_A': int(result_dict['distance_A']),
+        'distance_B': int(result_dict['distance_B']),
+        'distance_C': int(result_dict['distance_C']),
+        'distance_D': int(result_dict['distance_D']),
     }
 
 
